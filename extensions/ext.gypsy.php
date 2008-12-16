@@ -461,7 +461,6 @@ class Gypsy
 	 * @param  string   $r      The current contents of the page
 	 * @return string           Modified $r
 	 * @see    http://expressionengine.com/developers/extension_hooks/publish_admin_edit_field_extra_row/
-	 * @author Mark Huot <docs@markhuot.com>
 	 * @since  version 1.0.0
 	 */
 	function edit_custom_field($data, $r)
