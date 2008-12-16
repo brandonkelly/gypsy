@@ -41,7 +41,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $version = '0.0.1';
+	var $version = '0.0.2';
 	
 	/**
 	 * Extension Description
@@ -361,16 +361,24 @@ class Gypsy
 		}
 		
 		
-		if ($current < '0.0.0')
+		if ($current < '0.0.2')
 		{
-			$this->activate_extension();
+			$query = $DB->query("SELECT field_id, gypsy_weblogs
+			                     FROM exp_weblog_fields
+			                     WHERE field_is_gypsy = 'y'
+			                       AND gypsy_weblogs != ''");
+			foreach($query->result as $field)
+			{
+				$gypsy_weblogs = unserialize($field['gypsy_weblogs']);
+				$DB->query("UPDATE exp_weblog_fields
+				            SET gypsy_weblogs = ' ".stripslashes(implode(' ', $gypsy_weblogs))." '
+				            WHERE field_id = '{$field['field_id']}'");
+			}
 		}
-		else
-		{
-			$DB->query("UPDATE exp_extensions
-			            SET version = '".$DB->escape_str($this->version)."'
-			            WHERE class = '".$this->class_name."'");
-		}
+		
+		$DB->query("UPDATE exp_extensions
+		            SET version = '".$DB->escape_str($this->version)."'
+		            WHERE class = '".$this->class_name."'");
 	}
 
 
@@ -474,23 +482,11 @@ class Gypsy
 		}
 		
 		
-		// Get the field group ID
-		if ($data['group_id'])
-		{
-			$group_id = $data['group_id'];
-		}
-		else
-		{
-			preg_match("/<input.+name='group_id'.+value='(\d+)'/iU", $r, $matches);
-			$group_id = $matches[1];
-		}
-		
-		
 		// Get the weblogs using this field group
 		$weblogs = $DB->query("SELECT weblog_id, blog_title
 		                       FROM exp_weblogs
-		                       WHERE field_group = '{$group_id}'
-		                         AND site_id = '{$PREFS->ini('site_id')}'");
+		                       WHERE site_id = '{$PREFS->ini('site_id')}'
+		                       ORDER BY blog_title");
 		if ( ! $weblogs->num_rows)
 		{
 			return $r;
@@ -521,7 +517,7 @@ class Gypsy
 		
 		$field_is_gypsy = ($data['field_is_gypsy'] == 'y') ? TRUE : FALSE;
 		$indent = NBS.NBS.NBS.'<img src="'.PATH_CP_IMG.'cat_marker.gif" border="0"  width="18" height="14" alt="" title="" />'.NBS.NBS;
-		$gypsy_weblogs = $data['gypsy_weblogs'] ? unserialize($data['gypsy_weblogs']) : array();
+		$gypsy_weblogs = $data['gypsy_weblogs'] ? array_filter(explode(' ', $data['gypsy_weblogs'])) : array();
 		
 		// Assemble the first row
 		$r_top .= $DSP->tr()
@@ -582,7 +578,7 @@ class Gypsy
 					$gypsy_weblogs[] = $weblog;
 				}
 			}
-			$_POST['gypsy_weblogs'] = addslashes(serialize($gypsy_weblogs));
+			$_POST['gypsy_weblogs'] = ' '.addslashes(implode(' ', $gypsy_weblogs)).' ';
 			
 			$i = 0;
 			while(isset($_POST["gypsy_weblogs_{$i}"]))
@@ -642,31 +638,48 @@ class Gypsy
 			$field_query = $DB->query("SELECT *
 			                           FROM exp_weblog_fields
 			                           WHERE group_id = '{$field_group}'
+			                             AND field_is_gypsy != 'y'
 			                           ORDER BY field_order");
 		}
 		
 		
-		// Filter out Gypsy fields that don't like this weblog
 		$result = array();
+		
+		
+		// Filter out Gypsy fields
+		
 		foreach($field_query->result as $field)
 		{
-			if ($field['field_is_gypsy'] == 'y')
+			if (( ! $field['field_is_gypsy']) OR ($field['field_is_gypsy'] != 'y'))
 			{
-				$gypsy_weblogs = $field['gypsy_weblogs']
-					? unserialize($field['gypsy_weblogs'])
-					: array();
-				if (array_search($GYPSY_WEBLOG_ID, $gypsy_weblogs) === FALSE)
-				{
-					continue;
-				}
+				$result[] = $field;
 			}
-			
-			$result[] = $field;
 		}
+		
+		
+		// Insert all assigned Gypsy rows
+		$gypsy_query = $DB->query("SELECT *
+		                           FROM exp_weblog_fields
+		                           WHERE field_is_gypsy = 'y'
+		                             AND gypsy_weblogs LIKE '% {$GYPSY_WEBLOG_ID} %'");
+		if ($gypsy_query->num_rows)
+		{
+			$result = array_merge($result, $gypsy_query->result);
+			
+			// Sort the array by field_order
+			function cmp($a, $b)
+			{
+				if ($a['field_order'] == $b['field_order']) return 0;
+				return ($a['field_order'] < $b['field_order']) ? -1 : 1;
+			}
+			usort($result, 'cmp');
+		}
+		
 		
 		$field_query->result = $result;
 		$field_query->num_rows = count($result);
 		$field_query->row = $field_query->num_rows ? $result[0] : array();
+		
 		
 		return $field_query;
 		
