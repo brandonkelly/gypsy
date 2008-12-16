@@ -48,7 +48,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $description = 'Assign custom fields to individual weblogs';
+	var $description = 'Free your custom fields from their field groups.';
 	
 	/**
 	 * Extension Settings Exist
@@ -535,7 +535,7 @@ class Gypsy
 		
 		// Assemble the second row
 		$r_top .= '<tr id="gypsy_weblogs"' . ( ! $field_is_gypsy ? ' style="display:none;">' : '')
-		        . $DSP->td($class, '50%')
+		        . '<td class="'.$class.'" style="width:50%; vertical-align:top;">'
 		        . $DSP->qdiv('defaultBold', $indent.$LANG->line('gypsy_weblogs_title'))
 		        . $DSP->td_c()
 		        . $DSP->td($class, '50%')
@@ -580,12 +580,18 @@ class Gypsy
 			}
 			$_POST['gypsy_weblogs'] = ' '.addslashes(implode(' ', $gypsy_weblogs)).' ';
 			
-			$i = 0;
-			while(isset($_POST["gypsy_weblogs_{$i}"]))
-			{
-				unset($_POST["gypsy_weblogs_{$i}"]);
-				$i ++;
-			}
+			
+		}
+		elseif (isset($_POST['gypsy_weblogs']))
+		{
+			unset($_POST['gypsy_weblogs']);
+		}
+		
+		$i = 0;
+		while(isset($_POST["gypsy_weblogs_{$i}"]))
+		{
+			unset($_POST["gypsy_weblogs_{$i}"]);
+			$i++;
 		}
 	}
 

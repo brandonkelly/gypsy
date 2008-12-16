@@ -22,10 +22,10 @@ $L = array(
 // -- Edit Custom Field form
 
 'field_is_gypsy_title' =>
-'Assign to individual weblogs?',
+'Is this a gypsy field?',
 
 'field_is_gypsy_info' =>
-'This preference determines whether the field is assigned to individual weblogs within its field group, or all of them.',
+'This preference frees the field from its field group, enabling you to assign it directly to your weblogs.',
 
 'gypsy_weblogs_title' =>
 'Which weblogs should this field be assigned to?',
