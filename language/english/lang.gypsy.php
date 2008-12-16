@@ -21,8 +21,14 @@ $L = array(
 
 // -- Edit Custom Field form
 
-'field_is_gypsy' =>
-'Only display this field on certain weblogs?',
+'field_is_gypsy_title' =>
+'Assign to individual weblogs?',
+
+'field_is_gypsy_info' =>
+'This preference determines whether the field is assigned to individual weblogs within its field group, or all of them.',
+
+'gypsy_weblogs_title' =>
+'Which weblogs should this field be assigned to?',
 
 
 /* END */

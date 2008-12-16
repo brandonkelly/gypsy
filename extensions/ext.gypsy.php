@@ -5,6 +5,8 @@
  *
  * This extension enables Custom Fields to only display on specified weblogs.
  *
+ * The concept for this extension comes from Matt Weinberg (EE Forums user slapshotw).
+ *
  * @package   Gypsy
  * @author    Brandon Kelly <me@brandon-kelly.com>
  * @link      http://brandon-kely.com/apps/gypsy/
@@ -46,7 +48,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $description = 'Show or hide your custom fields on a per-weblog basis';
+	var $description = 'Assign custom fields to individual weblogs';
 	
 	/**
 	 * Extension Settings Exist
@@ -310,7 +312,8 @@ class Gypsy
 			array('hook'=>'sessions_start',                     'method'=>'save_custom_field'),
 
 			// Publish / Edit
-			array('hook'=>'publish_form_field_unique',          'method'=>'assemble_field')
+			array('hook'=>'publish_form_weblog_preferences',    'method'=>'get_weblog_id'),
+			array('hook'=>'publish_form_field_query',           'method'=>'get_fields')
 		);
 		
 		foreach($extensions as $extension)
@@ -329,13 +332,13 @@ class Gypsy
 			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN field_is_gypsy CHAR(1) NOT NULL DEFAULT 'n'");
 		}
 		
-		// Add show_on_weblogs to exp_weblog_fields
+		// Add gypsy_weblogs to exp_weblog_fields
 		$query = $DB->query("SHOW COLUMNS
 		                     FROM exp_weblog_fields
-		                     WHERE Field = 'show_on_weblogs'");
+		                     WHERE Field = 'gypsy_weblogs'");
 		if ( ! $query->num_rows)
 		{
-			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN show_on_weblogs text NOT NULL DEFAULT ''");
+			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN gypsy_weblogs text NOT NULL DEFAULT ''");
 		}
 	}
 
@@ -465,15 +468,34 @@ class Gypsy
 	{
 		global $EXT, $LANG, $DB, $PREFS, $DSP;
 		
-		
 		// Check if we're not the only one using this hook
 		if($EXT->last_call !== false)
 		{
 			$r = $EXT->last_call;
 		}
-
-		// Load lang.gypsy.php
-		$LANG->fetch_language_file('gypsy');
+		
+		
+		// Get the field group ID
+		if ($data['group_id'])
+		{
+			$group_id = $data['group_id'];
+		}
+		else
+		{
+			preg_match("/<input.+name='group_id'.+value='(\d+)'/iU", $r, $matches);
+			$group_id = $matches[1];
+		}
+		
+		
+		// Get the weblogs using this field group
+		$weblogs = $DB->query("SELECT weblog_id, blog_title
+		                       FROM exp_weblogs
+		                       WHERE field_group = '{$group_id}'
+		                         AND site_id = '{$PREFS->ini('site_id')}'");
+		if ( ! $weblogs->num_rows)
+		{
+			return $r;
+		}
 		
 		
 		// Find "Show this field by default?" row
@@ -490,27 +512,54 @@ class Gypsy
 		$r_top = substr($r, 0, $offset);
 		$r_bottom = substr($r, $offset);
 		
-		// Create Gypsy row
-		$fid = $data['field_id'];
-		$field_is_gypsy = FALSE;
 		
+		// ---------------------
+		// Create Gypsy row
+		// ---------------------
+		
+		// Load lang.gypsy.php
+		$LANG->fetch_language_file('gypsy');
+		
+		$field_is_gypsy = ($data['field_is_gypsy'] == 'y') ? TRUE : FALSE;
+		$indent = NBS.NBS.NBS.'<img src="'.PATH_CP_IMG.'cat_marker.gif" border="0"  width="18" height="14" alt="" title="" />'.NBS.NBS;
+		$gypsy_weblogs = $data['gypsy_weblogs'] ? unserialize($data['gypsy_weblogs']) : array();
+		
+		// Assemble the first row
 		$r_top .= $DSP->tr()
 		        . $DSP->td($class, '50%')
-		        . $DSP->qdiv('defaultBold', $LANG->line('field_is_gypsy'))
+		        . $DSP->qdiv('defaultBold', $LANG->line('field_is_gypsy_title'))
+		        . $DSP->qdiv('itemWrapper', $LANG->line('field_is_gypsy_info'))
 		        . $DSP->td_c()
 		        . $DSP->td($class, '50%')
-		        . 'Yes&nbsp;'                 .$DSP->input_radio('field_is_gypsy', 'y', $field_is_gypsy ? 'y' : 'n')
-		        . '&nbsp;&nbsp;&nbsp;No&nbsp;'.$DSP->input_radio('field_is_gypsy', 'n', $field_is_gypsy ? 'n' : 'y')
+		        . 'Yes'.NBS
+		        . $DSP->input_radio('field_is_gypsy', 'y', ($field_is_gypsy ? 1 : 0), 'onclick="document.getElementById(\'gypsy_weblogs\').style.display=\'table-row\';"')
+		        . NBS.NBS.NBS.'No'.NBS
+		        . $DSP->input_radio('field_is_gypsy', 'n', ($field_is_gypsy ? 0 : 1), 'onclick="document.getElementById(\'gypsy_weblogs\').style.display=\'none\';"')
 		        . $DSP->td_c()
 		        . $DSP->tr_c();
+		
+		// Assemble the second row
+		$r_top .= '<tr id="gypsy_weblogs"' . ( ! $field_is_gypsy ? ' style="display:none;">' : '')
+		        . $DSP->td($class, '50%')
+		        . $DSP->qdiv('defaultBold', $indent.$LANG->line('gypsy_weblogs_title'))
+		        . $DSP->td_c()
+		        . $DSP->td($class, '50%')
+		        . $DSP->input_select_header('gypsy_weblogs[]', 'y', ($weblogs->num_rows > 20 ? 20 : $weblogs->num_rows));
+		foreach($weblogs->result as $weblog)
+		{
+			$selected = (array_search($weblog['weblog_id'], $gypsy_weblogs) !== FALSE) ? 1 : 0;
+			$r_top .= $DSP->input_select_option($weblog['weblog_id'], $weblog['blog_title'], $selected);
+		}
+		$r_top .= $DSP->td_c()
+		        . $DSP->tr_c();
+		
 		
 		// Swap remaining row colors
 		$r_bottom = str_replace(array('tableCellOne',  'tableCellTwo', 'tableCellOne_'),
 		                        array('tableCellOne_', 'tableCellOne', 'tableCellTwo'), $r_bottom);
 		
 		
-		
-		
+		// Return re-assembled $r
 		return $r_top.$r_bottom;
 	}
 
@@ -524,69 +573,104 @@ class Gypsy
 	 */
 	function save_custom_field()
 	{
-//		if (isset($_POST['field_type']) AND $_POST['field_type'] == $this->type)
-//		{
-//			$_POST['field_pre_populate'] = 'n';
-//			$_POST['field_pre_blog_id'] = '0';
-//			$_POST['field_pre_field_id'] = '0';
-//			$_POST['field_related_orderby'] = 'title';
-//			$_POST['field_related_sort'] = 'asc';
-//			$_POST['field_related_max'] = '0';
-//			$_POST['field_fmt'] = 'xhtml';
-//			$_POST['field_show_fmt'] = 'n';
-//
-//
-//			if (isset($_POST['field_playa_max']))
-//			{
-//				$_POST['field_maxl'] = $_POST['field_playa_max'];
-//				unset($_POST['field_playa_max']);
-//			}
-//
-//			if (isset($_POST['field_playa_size']))
-//			{
-//				$_POST['field_ta_rows'] = $_POST['field_playa_size'];
-//				unset($_POST['field_playa_size']);
-//			}
-//
-//			if (isset($_POST['field_playa_blogs']))
-//			{
-//				$_POST['field_list_items'] = implode(',', $_POST['field_playa_blogs']);
-//				unset($_POST['field_playa_blogs']);
-//			}
-//		}
-//		else
-//		{
-//			if (isset($_POST['field_playa_max'])) unset($_POST['field_playa_max']);
-//			if (isset($_POST['field_playa_size'])) unset($_POST['field_playa_size']);
-//			if (isset($_POST['field_playa_blogs'])) unset($_POST['field_playa_blogs']);
-//		}
-//
-//		$i = 0;
-//		while(isset($_POST["field_playa_blogs_{$i}"]))
-//		{
-//			unset($_POST["field_playa_blogs_{$i}"]);
-//			$i ++;
-//		}
+		if (isset($_POST['field_is_gypsy']))
+		{
+			$gypsy_weblogs = array();
+			if ($_POST['field_is_gypsy'] == 'y' AND isset($_POST['gypsy_weblogs']))
+			{
+				foreach($_POST['gypsy_weblogs'] as $i=>$weblog)
+				{
+					$gypsy_weblogs[] = $weblog;
+				}
+			}
+			$_POST['gypsy_weblogs'] = addslashes(serialize($gypsy_weblogs));
+			
+			$i = 0;
+			while(isset($_POST["gypsy_weblogs_{$i}"]))
+			{
+				unset($_POST["gypsy_weblogs_{$i}"]);
+				$i ++;
+			}
+		}
 	}
 
 
 
 	/**
-	 * Assemble Field
+	 * Get Weblog ID
 	 *
-	 * @param  array    $row          Parameters for the field from the database
-	 * @param  string   $field_data   If entry is not new, this will have field's current value
-	 * @return string                 The Playa field
-	 * @see    http://expressionengine.com/developers/extension_hooks/publish_form_field_unique/
+	 * @param  array    $row   Row of results from database for the weblog of this entry form
+	 * @return array           unmodified $row
+	 * @see    http://expressionengine.com/developers/extension_hooks/publish_form_weblog_preferences/
 	 * @since  version 1.0.0
 	 */
-	function assemble_field($row, $field_data)
+	function get_weblog_id($row)
 	{
-		global $DB, $DSP, $EXT, $LANG;
+		global $EXT, $GYPSY_WEBLOG_ID;
+		
+		
+		$GYPSY_WEBLOG_ID = $row['weblog_id'];
+		
+		
+		return ($EXT->last_call !== FALSE)
+			? $EXT->last_call
+			: $row;
+	}
 
 
-		return $r;
 
+	/**
+	 * Get Fields
+	 *
+	 * @param  array    $obj           the Publish class object
+	 * @param  string   $field_group   the custom field group assigned to this weblog
+	 * @return object                  the DB object
+	 * @see    http://expressionengine.com/developers/extension_hooks/publish_form_field_query/
+	 * @since  version 1.0.0
+	 */
+	function get_fields($obj, $field_group)
+	{
+		global $DB, $DSP, $EXT, $LANG, $GYPSY_WEBLOG_ID;
+		
+		
+		// Get fields
+		if ($EXT->last_call !== FALSE)
+		{
+	    	$field_query = $EXT->last_call;
+	    }
+	    else
+	    {
+			$field_query = $DB->query("SELECT *
+			                           FROM exp_weblog_fields
+			                           WHERE group_id = '{$field_group}'
+			                           ORDER BY field_order");
+		}
+		
+		
+		// Filter out Gypsy fields that don't like this weblog
+		$result = array();
+		foreach($field_query->result as $field)
+		{
+			if ($field['field_is_gypsy'] == 'y')
+			{
+				$gypsy_weblogs = $field['gypsy_weblogs']
+					? unserialize($field['gypsy_weblogs'])
+					: array();
+				if (array_search($GYPSY_WEBLOG_ID, $gypsy_weblogs) === FALSE)
+				{
+					continue;
+				}
+			}
+			
+			$result[] = $field;
+		}
+		
+		$field_query->result = $result;
+		$field_query->num_rows = count($result);
+		$field_query->row = $field_query->num_rows ? $result[0] : array();
+		
+		return $field_query;
+		
 	}
 }
 
