@@ -318,6 +318,25 @@ class Gypsy
 			$ext = array_merge($ext_template, $extension);
 			$DB->query($DB->insert_string('exp_extensions', $ext));
 		}
+		
+		
+		// Add field_is_gypsy to exp_weblog_fields
+		$query = $DB->query("SHOW COLUMNS
+		                     FROM exp_weblog_fields
+		                     WHERE Field = 'field_is_gypsy'");
+		if ( ! $query->num_rows)
+		{
+			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN field_is_gypsy CHAR(1) NOT NULL DEFAULT 'n'");
+		}
+		
+		// Add show_on_weblogs to exp_weblog_fields
+		$query = $DB->query("SHOW COLUMNS
+		                     FROM exp_weblog_fields
+		                     WHERE Field = 'show_on_weblogs'");
+		if ( ! $query->num_rows)
+		{
+			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN show_on_weblogs text NOT NULL DEFAULT ''");
+		}
 	}
 
 
@@ -444,33 +463,50 @@ class Gypsy
 	 */
 	function edit_custom_field($data, $r)
 	{
-		global $EXT, $LANG, $DB, $PREFS;
-
+		global $EXT, $LANG, $DB, $PREFS, $DSP;
+		
+		
 		// Check if we're not the only one using this hook
 		if($EXT->last_call !== false)
 		{
 			$r = $EXT->last_call;
 		}
+
+		// Load lang.gypsy.php
+		$LANG->fetch_language_file('gypsy');
 		
 		
 		// Find "Show this field by default?" row
-		
 		$pattern = "<tr>.*[\s]+" .
-		           "<td.+class='\w+'.*[\s]+" .
+		           "<td.+class='(\w+)'.*[\s]+" .
 		           "<div.+class='defaultBold'.+[\s]+" .
 		           "<div.+class='itemWrapper'.+[\s]+" .
 		           "<\/td>.*[\s]+" .
 		           "<td.+[\s]+" .
 		           ".+<input.+name='field_is_hidden'*";
-		
 		preg_match("/{$pattern}/i", $r, $matches, PREG_OFFSET_CAPTURE);
 		$offset = $matches[0][1];
+		$class = $matches[1][0];
 		$r_top = substr($r, 0, $offset);
 		$r_bottom = substr($r, $offset);
 		
+		// Create Gypsy row
+		$fid = $data['field_id'];
+		$field_is_gypsy = FALSE;
+		
+		$r_top .= $DSP->tr()
+		        . $DSP->td($class, '50%')
+		        . $DSP->qdiv('defaultBold', $LANG->line('field_is_gypsy'))
+		        . $DSP->td_c()
+		        . $DSP->td($class, '50%')
+		        . 'Yes&nbsp;'                 .$DSP->input_radio('field_is_gypsy', 'y', $field_is_gypsy ? 'y' : 'n')
+		        . '&nbsp;&nbsp;&nbsp;No&nbsp;'.$DSP->input_radio('field_is_gypsy', 'n', $field_is_gypsy ? 'n' : 'y')
+		        . $DSP->td_c()
+		        . $DSP->tr_c();
+		
 		// Swap remaining row colors
-		$r_bottom = preg_replace(array('/tableCellOne/', '/tableCellTwo/', '/tableCellOne_/'),
-		                         array('tableCellOne_',   'tableCellOne',   'tableCellTwo'), $r_bottom);
+		$r_bottom = str_replace(array('tableCellOne',  'tableCellTwo', 'tableCellOne_'),
+		                        array('tableCellOne_', 'tableCellOne', 'tableCellTwo'), $r_bottom);
 		
 		
 		

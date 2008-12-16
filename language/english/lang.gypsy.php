@@ -19,6 +19,12 @@ $L = array(
 'Would you like this extension to check for updates and display them on your CP homepage?',
 
 
+// -- Edit Custom Field form
+
+'field_is_gypsy' =>
+'Only display this field on certain weblogs?',
+
+
 /* END */
 ''=>''
 );
