@@ -9,7 +9,7 @@
  *
  * @package   Gypsy
  * @author    Brandon Kelly <me@brandon-kelly.com>
- * @link      http://brandon-kely.com/apps/gypsy/
+ * @link      http://brandon-kelly.com/apps/gypsy/
  * @copyright Copyright (c) 2008 Brandon Kelly
  * @license   http://creativecommons.org/licenses/by-sa/3.0/   Attribution-Share Alike 3.0 Unported
  */
