@@ -41,7 +41,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $version = '0.0.2';
+	var $version = '1.0.0';
 	
 	/**
 	 * Extension Description
@@ -163,7 +163,7 @@ class Gypsy
 		                       <input type="image" src="http://brandon-kelly.com/images/donations.gif" border="0" name="submit" alt="">
 		                       <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
 		                   </form>
-		                       <p style="margin:0; white-space:nowrap;">'.$LANG->line('donate').'</p>
+		                   <p style="margin:0; white-space:nowrap;">'.$LANG->line('donate').'</p>
 		               </div>';
 	    
 	    $DSP->body .= "<h1>{$this->name} <small>{$this->version}</small></h1>";
@@ -179,6 +179,14 @@ class Gypsy
 	    
 	    
 	    // Updates Setting
+	    
+	    $lgau_query = $DB->query("SELECT class
+	                              FROM exp_extensions
+	                              WHERE class = 'Lg_addon_updater_ext'
+	                                AND enabled = 'y'
+	                              LIMIT 1");
+	    $lgau_enabled = $lgau_query->num_rows ? TRUE : FALSE;
+	    $check_for_extension_updates = ($lgau_enabled AND (( ! isset($current['check_for_extension_updates'])) OR ($current['check_for_extension_updates'] == 'y'))) ? TRUE : FALSE;
 	    
 		$DSP->body .= $DSP->table_open(array('class' => 'tableBorder', 'border' => '0', 'style' => 'margin-top:18px; width:100%'));
 
@@ -200,10 +208,11 @@ class Gypsy
 			. $DSP->td_c();
 
 		$DSP->body .= $DSP->td('tableCellOne')
-			. "<select name='check_for_extension_updates'>"
-				. $DSP->input_select_option('y', "Yes", ((( ! isset($current['check_for_extension_updates'])) OR ($current['check_for_extension_updates'] == 'y')) ? 'y' : '' ))
-				. $DSP->input_select_option('n', "No", (((isset($current['check_for_extension_updates'])) AND ($current['check_for_extension_updates'] != 'y')) ? 'y' : '' ))
-				. $DSP->input_select_footer()
+			. '<select name="check_for_extension_updates"' . ($lgau_enabled ? '' : ' disabled="disabled"') . '>'
+			. $DSP->input_select_option('y', $LANG->line('yes'), ($check_for_extension_updates ? 'y' : '' ))
+			. $DSP->input_select_option('n', $LANG->line('no'), ( ! $check_for_extension_updates ? 'y' : '' ))
+			. $DSP->input_select_footer()
+			. ($lgau_enabled ? '' : NBS.NBS.NBS.$LANG->line('check_for_extension_updates_nolgau'))
 			. $DSP->td_c()
 			. $DSP->tr_c();
 
@@ -332,19 +341,10 @@ class Gypsy
 		}
 		
 		
-		if ($current < '0.0.2')
+		if ($current < '1.0.0')
 		{
-			$query = $DB->query("SELECT field_id, gypsy_weblogs
-			                     FROM exp_weblog_fields
-			                     WHERE field_is_gypsy = 'y'
-			                       AND gypsy_weblogs != ''");
-			foreach($query->result as $field)
-			{
-				$gypsy_weblogs = unserialize($field['gypsy_weblogs']);
-				$DB->query("UPDATE exp_weblog_fields
-				            SET gypsy_weblogs = ' ".stripslashes(implode(' ', $gypsy_weblogs))." '
-				            WHERE field_id = '{$field['field_id']}'");
-			}
+			$this->activate_extension();
+			return;
 		}
 		
 		$DB->query("UPDATE exp_extensions
@@ -493,13 +493,13 @@ class Gypsy
 		// Assemble the first row
 		$r_top .= $DSP->tr()
 		        . $DSP->td($class, '50%')
-		        . $DSP->qdiv('defaultBold', $LANG->line('field_is_gypsy_title'))
+		        . $DSP->qdiv('defaultBold', $LANG->line('field_is_gypsy_label'))
 		        . $DSP->qdiv('itemWrapper', $LANG->line('field_is_gypsy_info'))
 		        . $DSP->td_c()
 		        . $DSP->td($class, '50%')
-		        . 'Yes'.NBS
+		        . $LANG->line('yes').NBS
 		        . $DSP->input_radio('field_is_gypsy', 'y', ($field_is_gypsy ? 1 : 0), 'onclick="document.getElementById(\'gypsy_weblogs\').style.display=\'table-row\';"')
-		        . NBS.NBS.NBS.'No'.NBS
+		        . NBS.NBS.NBS.$LANG->line('no').NBS
 		        . $DSP->input_radio('field_is_gypsy', 'n', ($field_is_gypsy ? 0 : 1), 'onclick="document.getElementById(\'gypsy_weblogs\').style.display=\'none\';"')
 		        . $DSP->td_c()
 		        . $DSP->tr_c();
@@ -507,7 +507,7 @@ class Gypsy
 		// Assemble the second row
 		$r_top .= '<tr id="gypsy_weblogs"' . ( ! $field_is_gypsy ? ' style="display:none;">' : '')
 		        . '<td class="'.$class.'" style="width:50%; vertical-align:top;">'
-		        . $DSP->qdiv('defaultBold', $indent.$LANG->line('gypsy_weblogs_title'))
+		        . $DSP->qdiv('defaultBold', $indent.$LANG->line('gypsy_weblogs_label'))
 		        . $DSP->td_c()
 		        . $DSP->td($class, '50%')
 		        . $DSP->input_select_header('gypsy_weblogs[]', 'y', ($weblogs->num_rows > 20 ? 20 : $weblogs->num_rows));
