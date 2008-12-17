@@ -94,7 +94,7 @@ class Gypsy
 		
 		$query = $DB->query("SELECT settings
 		                     FROM exp_extensions
-		                     WHERE class = '".$this->class_name."'
+		                     WHERE class = '{$this->class_name}'
 		                       AND settings != ''
 		                     LIMIT 1");
 		
@@ -247,7 +247,7 @@ class Gypsy
 		
 		$DB->query("UPDATE exp_extensions
 		            SET settings = '".addslashes(serialize($settings))."'
-		            WHERE class = '".$this->class_name."'");
+		            WHERE class = '{$this->class_name}'");
 	}
 
 
@@ -270,7 +270,7 @@ class Gypsy
 		
 		// Delete old hooks
 		$DB->query("DELETE FROM exp_extensions
-		            WHERE class = '".$this->class_name."'");
+		            WHERE class = '{$this->class_name}'");
 		
 		
 		// Add new extensions
@@ -349,7 +349,7 @@ class Gypsy
 		
 		$DB->query("UPDATE exp_extensions
 		            SET version = '".$DB->escape_str($this->version)."'
-		            WHERE class = '".$this->class_name."'");
+		            WHERE class = '{$this->class_name}'");
 	}
 
 
@@ -365,7 +365,7 @@ class Gypsy
 
 		$DB->query("UPDATE exp_extensions
 		            SET enabled='n'
-		            WHERE class='".$this->class_name."'");
+		            WHERE class='{$this->class_name}'");
 	}
 
 
@@ -516,7 +516,8 @@ class Gypsy
 			$selected = (array_search($weblog['weblog_id'], $gypsy_weblogs) !== FALSE) ? 1 : 0;
 			$r_top .= $DSP->input_select_option($weblog['weblog_id'], $weblog['blog_title'], $selected);
 		}
-		$r_top .= $DSP->td_c()
+		$r_top .= $DSP->input_select_footer()
+		        . $DSP->td_c()
 		        . $DSP->tr_c();
 		
 		
