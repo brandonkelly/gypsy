@@ -141,35 +141,6 @@ class Gypsy
 	    global $DB, $DSP, $LANG, $IN, $PREFS;
 	    
 	    $current = $this->get_site_settings($current);
-	    
-	    // Get Statuses
-	    
-	    $statuses = array();
-	    $query = $DB->query('SELECT g.group_id, sites.site_label, g.group_name, s.status_id, s.status
-		                     FROM exp_status_groups AS g,
-			                      exp_statuses      AS s,
-			                      exp_sites         AS sites
-			                 WHERE sites.site_id = g.site_id
-			                   AND s.group_id = g.group_id
-			                 ORDER BY sites.site_label, g.group_name, s.status_order');
-
-		if ($query->num_rows)
-		{
-			$msm = ($PREFS->ini('multiple_sites_enabled') == 'y') ? TRUE : FALSE;
-			
-			foreach($query->result as $row)
-			{
-				if ( ! isset($statuses[$row['group_id']]))
-				{
-					$statuses[$row['group_id']] = array(
-						'group_name' => ($msm ? $row['site_label'].' – ' : '') . $row['group_name'],
-						'statuses'   => array()
-					);
-				}
-				
-				$statuses[$row['group_id']]['statuses'][$row['status_id']] = $row['status'];
-			}
-		}
 		
 	    
 	    // Form Header
