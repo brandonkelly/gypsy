@@ -102,6 +102,23 @@ class Gypsy
 			? unserialize($query->row['settings'])
 			: array();
 	}
+	
+	
+	
+	/**
+	 * Get Default Settings
+	 * 
+	 * @return array   Default settings for site
+	 * @since 1.0.1
+	 */
+	function get_default_settings()
+	{
+		$settings = array(
+			'check_for_extension_updates' => 'y'
+		);
+
+		return $settings;
+	}
 
 
 
@@ -110,16 +127,21 @@ class Gypsy
 	 *
 	 * @param  array   $settings   Current extension settings (not site-specific)
 	 * @return array               Site-specific extension settings
-	 * @since  version 1.0.0
+	 * @since  version 1.1.0
 	 */
 	function get_site_settings($settings=array())
 	{
 		global $PREFS;
 		
+		$site_settings = $this->get_default_settings();
+		
 		$site_id = $PREFS->ini('site_id');
-		return isset($settings[$site_id])
-			? $settings[$site_id]
-			: array();
+		if (isset($settings[$site_id]))
+		{
+			$site_settings = array_merge($site_settings, $settings[$site_id]);
+		}
+
+		return $site_settings;
 	}
 
 
@@ -178,44 +200,50 @@ class Gypsy
 	    
 	    
 	    // Updates Setting
-	    
-	    $lgau_query = $DB->query("SELECT class
-	                              FROM exp_extensions
-	                              WHERE class = 'Lg_addon_updater_ext'
-	                                AND enabled = 'y'
-	                              LIMIT 1");
-	    $lgau_enabled = $lgau_query->num_rows ? TRUE : FALSE;
-	    $check_for_extension_updates = ($lgau_enabled AND (( ! isset($current['check_for_extension_updates'])) OR ($current['check_for_extension_updates'] == 'y'))) ? TRUE : FALSE;
-	    
-		$DSP->body .= $DSP->table_open(array('class' => 'tableBorder', 'border' => '0', 'style' => 'margin-top:18px; width:100%'));
 
-		$DSP->body .= $DSP->tr()
-			. $DSP->td('tableHeading', '', '2')
-			. $LANG->line("check_for_extension_updates_title")
-			. $DSP->td_c()
-			. $DSP->tr_c();
+		$lgau_query = $DB->query("SELECT class
+		                          FROM exp_extensions
+		                          WHERE class = 'Lg_addon_updater_ext'
+		                            AND enabled = 'y'
+		                          LIMIT 1");
+		$lgau_enabled = $lgau_query->num_rows ? TRUE : FALSE;
+		$check_for_extension_updates = ($lgau_enabled AND $current['check_for_extension_updates'] == 'y') ? TRUE : FALSE;
 
-		$DSP->body .= $DSP->tr()
-			. $DSP->td('', '', '2')
-			. "<div class='box' style='border-width:0 0 1px 0; margin:0; padding:10px 5px'><p>" . $LANG->line('check_for_extension_updates_info') . "</p></div>"
-			. $DSP->td_c()
-			. $DSP->tr_c();
+		$DSP->body .= $DSP->table_open(
+		                                   array(
+		                                       'class'  => 'tableBorder',
+		                                       'border' => '0',
+		                                       'style' => 'margin-top:18px; width:100%'
+		                                   )
+		                               )
 
-		$DSP->body .= $DSP->tr()
-			. $DSP->td('tableCellOne', '60%')
-			. $DSP->qdiv('defaultBold', $LANG->line("check_for_extension_updates_label"))
-			. $DSP->td_c();
+		            . $DSP->tr()
+		            . $DSP->td('tableHeading', '', '2')
+		            . $LANG->line("check_for_extension_updates_title")
+		            . $DSP->td_c()
+		            . $DSP->tr_c()
 
-		$DSP->body .= $DSP->td('tableCellOne')
-			. '<select name="check_for_extension_updates"' . ($lgau_enabled ? '' : ' disabled="disabled"') . '>'
-			. $DSP->input_select_option('y', $LANG->line('yes'), ($check_for_extension_updates ? 'y' : '' ))
-			. $DSP->input_select_option('n', $LANG->line('no'), ( ! $check_for_extension_updates ? 'y' : '' ))
-			. $DSP->input_select_footer()
-			. ($lgau_enabled ? '' : NBS.NBS.NBS.$LANG->line('check_for_extension_updates_nolgau'))
-			. $DSP->td_c()
-			. $DSP->tr_c();
+		            . $DSP->tr()
+		            . $DSP->td('', '', '2')
+		            . '<div class="box" style="border-width:0 0 1px 0; margin:0; padding:10px 5px"><p>'.$LANG->line('check_for_extension_updates_info').'</p></div>'
+		            . $DSP->td_c()
+		            . $DSP->tr_c()
 
-		$DSP->body .= $DSP->table_c();
+		            . $DSP->tr()
+		            . $DSP->td('tableCellOne', '60%')
+		            . $DSP->qdiv('defaultBold', $LANG->line("check_for_extension_updates_label"))
+		            . $DSP->td_c()
+
+		            . $DSP->td('tableCellOne')
+		            . '<select name="check_for_extension_updates"'.($lgau_enabled ? '' : ' disabled="disabled"').'>'
+		            . $DSP->input_select_option('y', $LANG->line('yes'), ($current['check_for_extension_updates'] == 'y' ? 'y' : ''))
+		            . $DSP->input_select_option('n', $LANG->line('no'),  ($current['check_for_extension_updates'] != 'y' ? 'y' : ''))
+		            . $DSP->input_select_footer()
+		            . ($lgau_enabled ? '' : NBS.NBS.NBS.$LANG->line('check_for_extension_updates_nolgau'))
+		            . $DSP->td_c()
+		            . $DSP->tr_c()
+
+		            . $DSP->table_c();
 	    
 	    
 	    // Close Form
