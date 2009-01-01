@@ -48,7 +48,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $description = 'Free your custom fields from their field groups.';
+	var $description = 'Free your custom fields from their field groups';
 	
 	/**
 	 * Extension Settings Exist
