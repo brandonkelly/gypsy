@@ -41,7 +41,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $version = '1.0.0';
+	var $version = '1.0.1';
 	
 	/**
 	 * Extension Description
@@ -156,15 +156,14 @@ class Gypsy
 	    
 	    $DSP->body = '';
 	    
-	    $DSP->body .= '<div style="float:right; padding-left:154px;">
-	                       <form style="position:relative; *display:inline; float:left; margin-left:-154px;" action="https://www.paypal.com/cgi-bin/webscr" method="post">
-		                       <input type="hidden" name="cmd" value="_s-xclick">
-		                       <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----">
-		                       <input type="image" src="http://brandon-kelly.com/images/donations.gif" border="0" name="submit" alt="">
-		                       <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1">
-		                   </form>
-		                   <p style="margin:0; white-space:nowrap;">'.$LANG->line('donate').'</p>
-		               </div>';
+	    // Donations button
+	    $DSP->body .= '<div style="float:right;">'
+	                . '<a style="display:block; margin:-2px 10px 0 0; padding:5px 0 5px 70px; width:190px; height:15px; font-size:12px; line-height:15px;'
+	                . ' background:url(http://brandon-kelly.com/images/shared/donations.png) no-repeat 0 0; color:#000; font-weight:bold;"'
+	                . ' href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2181794" target="_blank">'
+	                . $LANG->line('donate')
+	                . '</a>'
+	                . '</div>';
 	    
 	    $DSP->body .= "<h1>{$this->name} <small>{$this->version}</small></h1>";
 	    
