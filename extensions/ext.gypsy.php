@@ -423,7 +423,7 @@ class Gypsy
 	    */
 	    if(( ! isset($this->settings['check_for_extension_updates'])) OR $this->settings['check_for_extension_updates'] == 'y')
 	    {
-	        $sources[] = 'http://brandon-kelly.com/apps/versions.xml';
+	        $sources[] = 'http://brandon-kelly.com/downloads/versions.xml';
 	    }
 	    return $sources;
 	
