@@ -41,7 +41,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $version = '1.0.1';
+	var $version = '1.0.2';
 	
 	/**
 	 * Extension Description
@@ -483,7 +483,7 @@ class Gypsy
 		// Get the weblogs using this field group
 		$weblogs = $DB->query("SELECT weblog_id, blog_title
 		                       FROM exp_weblogs
-		                       WHERE site_id = '{$PREFS->ini('site_id')}'
+		                       WHERE site_id = '".$PREFS->ini('site_id')."'
 		                       ORDER BY blog_title");
 		if ( ! $weblogs->num_rows)
 		{
