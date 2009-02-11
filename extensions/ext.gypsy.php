@@ -41,7 +41,7 @@ class Gypsy
 	 *
 	 * @var string
 	 */
-	var $version = '1.0.2';
+	var $version = '1.0.3';
 	
 	/**
 	 * Extension Description
@@ -331,18 +331,14 @@ class Gypsy
 		
 		
 		// Add field_is_gypsy to exp_weblog_fields
-		$query = $DB->query("SHOW COLUMNS
-		                     FROM exp_weblog_fields
-		                     WHERE Field = 'field_is_gypsy'");
+		$query = $DB->query("SHOW COLUMNS FROM `exp_weblog_fields` WHERE `Field` = 'field_is_gypsy'");
 		if ( ! $query->num_rows)
 		{
 			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN field_is_gypsy CHAR(1) NOT NULL DEFAULT 'n'");
 		}
 		
 		// Add gypsy_weblogs to exp_weblog_fields
-		$query = $DB->query("SHOW COLUMNS
-		                     FROM exp_weblog_fields
-		                     WHERE Field = 'gypsy_weblogs'");
+		$query = $DB->query("SHOW COLUMNS FROM `exp_weblog_fields` WHERE `Field` = 'gypsy_weblogs'");
 		if ( ! $query->num_rows)
 		{
 			$DB->query("ALTER TABLE exp_weblog_fields ADD COLUMN gypsy_weblogs text NOT NULL DEFAULT ''");
@@ -368,7 +364,7 @@ class Gypsy
 		}
 		
 		
-		if ($current < '1.0.0')
+		if ($current < '1.0.3')
 		{
 			$this->activate_extension();
 			return;
